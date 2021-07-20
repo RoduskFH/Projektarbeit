@@ -50,6 +50,64 @@ static inline ImVec4 operator+(const ImVec4 &lhs, const ImVec4 &rhs) { return Im
 static inline ImVec4 operator-(const ImVec4 &lhs, const ImVec4 &rhs) { return ImVec4(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w); }
 static inline ImVec4 operator*(const ImVec4 &lhs, const ImVec4 &rhs) { return ImVec4(lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z, lhs.w * rhs.w); }
 
+/**
+ *  Draw a square    
+ */
+struct Pair
+{
+    int x_;
+    int y_;
+};
+
+/**
+ *  Define the Shape in a Pair-Vector and also stores the position
+ */
+struct Shape
+{
+    std::vector<Pair> shapeV_;
+    ImVec2 pos_;
+};
+
+/**
+ * Grid Step
+ * Canvas Starting Point
+ * Draw List
+ */ 
+struct Drawer
+{
+    float grid_step_;
+    ImVec2 canvas_p0_;
+    ImDrawList *drw;
+
+    Drawer(float step, const ImVec2 p0, ImDrawList *drw) : grid_step_(step), canvas_p0_(p0), drw(drw)
+    {
+    }
+
+    void addSqr(const int x, const int y)
+    {
+        ImVec2 pos(x * grid_step_, y * grid_step_);
+        drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(0, 0, 0, 255));
+    }
+
+    void addSqr(const Pair &pair)
+    {
+        addSqr(pair.x_, pair.y_);
+    }
+
+    void addShape(const Shape &s, const ImVec2 &pos)
+    {
+        for (auto pixel : s.shapeV_)
+        {
+            addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y);
+        }
+    }
+
+    void addShape(const Shape &s)
+    {
+        addShape(s, s.pos_);
+    }
+};
+
 static void myProg()
 {
     static float f = 0.0f;
@@ -105,21 +163,16 @@ static void myProg()
 
         //fdsafdsafdsa
         static const float GRID_STEP = 64.0f;
-        struct hlp
-        {
-            static void addSqr(ImDrawList *drw, const int x, const int y)
-            {
-                ImVec2 pos(x * GRID_STEP, y * GRID_STEP);
-                drw->AddRectFilled(canvas_p0 + pos, canvas_p0 + pos + ImVec2(GRID_STEP, GRID_STEP), IM_COL32(0, 0, 0, 255));
-            }
-        };
 
         ImVec2 p0 = ImVec2(GRID_STEP + canvas_p0.x, GRID_STEP + canvas_p0.y);
         ImVec2 p1 = ImVec2(2 * GRID_STEP + canvas_p0.x, 2 * GRID_STEP + canvas_p0.y);
 
-        hlp::addSqr(draw_list, 1, 1);
-        hlp::addSqr(draw_list, 1, 2);
-        hlp::addSqr(draw_list, 1, 3);
+        Shape sq = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, {1, 0}};
+
+        Drawer dr = Drawer(GRID_STEP, canvas_p0, draw_list);
+        dr.addShape(sq);
+        // drawer::addShape(draw_list, sq);
+
         // draw_list->AddRectFilled(p0 + p1, p1, IM_COL32(0, 0, 0, 255));
 
         // This will catch our interactions
