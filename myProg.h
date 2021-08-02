@@ -167,10 +167,24 @@ static void myProg()
         ImVec2 p0 = ImVec2(GRID_STEP + canvas_p0.x, GRID_STEP + canvas_p0.y);
         ImVec2 p1 = ImVec2(2 * GRID_STEP + canvas_p0.x, 2 * GRID_STEP + canvas_p0.y);
 
-        Shape sq = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, {1, 0}};
-
         Drawer dr = Drawer(GRID_STEP, canvas_p0, draw_list);
-        dr.addShape(sq);
+
+        //Create a Square-Shape in coordinates 0, 0
+        Shape sq = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, {0, 0}};
+
+        //Create Rectangular Shape in coordinates 0, 0
+        Shape rectangle = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {0, 0}};
+
+        //Draw Square-Shape
+        // dr.addShape(sq);
+
+        //Draw Rectangular Shape
+        // dr.addShape(rectangle);
+
+        //Single Square in coordinates 1,1
+        dr.addSqr(1, 1);
+        // dr.addSqr({1,1});
+
         // drawer::addShape(draw_list, sq);
 
         // draw_list->AddRectFilled(p0 + p1, p1, IM_COL32(0, 0, 0, 255));
