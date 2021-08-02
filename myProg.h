@@ -51,7 +51,7 @@ static inline ImVec4 operator-(const ImVec4 &lhs, const ImVec4 &rhs) { return Im
 static inline ImVec4 operator*(const ImVec4 &lhs, const ImVec4 &rhs) { return ImVec4(lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z, lhs.w * rhs.w); }
 
 /**
- *  Draw a square    
+ *  For drawing a square in coordinates x, y  
  */
 struct Pair
 {
@@ -60,7 +60,7 @@ struct Pair
 };
 
 /**
- *  Define the Shape in a Pair-Vector and also stores the position
+ *  Define the Shape in a Pair-Vector and also stores the position of given Shape
  */
 struct Shape
 {
@@ -72,7 +72,7 @@ struct Shape
  * Grid Step
  * Canvas Starting Point
  * Draw List
- */ 
+ */
 struct Drawer
 {
     float grid_step_;
