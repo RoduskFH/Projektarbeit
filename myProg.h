@@ -83,17 +83,26 @@ struct Drawer
     {
     }
 
+    /**
+     * Adds a Black Square on given Coordinates x, y
+     */
     void addSqr(const int x, const int y)
     {
         ImVec2 pos(x * grid_step_, y * grid_step_);
         drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(0, 0, 0, 255));
     }
 
+    /**
+     * Adds a Black Square on given Cooridinates from Pair
+     */
     void addSqr(const Pair &pair)
     {
         addSqr(pair.x_, pair.y_);
     }
 
+    /**
+    * Adds a shape on Coordinates from pos 
+    */
     void addShape(const Shape &s, const ImVec2 &pos)
     {
         for (auto pixel : s.shapeV_)
@@ -102,6 +111,9 @@ struct Drawer
         }
     }
 
+    /**
+     * Adds a shape on Coordinates given by the Shape
+     */ 
     void addShape(const Shape &s)
     {
         addShape(s, s.pos_);
