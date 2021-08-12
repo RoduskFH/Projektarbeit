@@ -182,7 +182,7 @@ static void myProg()
         Drawer dr = Drawer(GRID_STEP, canvas_p0, draw_list);
 
         //Create a Square-Shape in coordinates 0, 0
-        Shape sq = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, {0, 0}};
+        Shape sq = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, {1, 1}};
 
         //Create Rectangular Shape in coordinates 0, 0
         Shape rectangle = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {0, 0}};
@@ -191,11 +191,7 @@ static void myProg()
         // dr.addShape(sq);
 
         //Draw Rectangular Shape
-        // dr.addShape(rectangle);
-
-        //Single Square in coordinates 1,1
-        dr.addSqr(1, 1);
-        // dr.addSqr({1,1});
+        dr.addShape(rectangle, {1, 1});
 
         // drawer::addShape(draw_list, sq);
 
