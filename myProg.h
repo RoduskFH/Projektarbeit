@@ -3,6 +3,8 @@
 #include "imgui.h"
 #include <math.h>
 #include <vector>
+#include <map>
+#include <iostream>
 
 static inline ImVec2 operator*(const ImVec2 &lhs, const float rhs) { return ImVec2(lhs.x * rhs, lhs.y * rhs); }
 static inline ImVec2 operator/(const ImVec2 &lhs, const float rhs) { return ImVec2(lhs.x / rhs, lhs.y / rhs); }
@@ -66,6 +68,35 @@ struct Shape
 {
     std::vector<Pair> shapeV_;
     ImVec2 pos_;
+    int level_;
+
+    inline int equalPixels(Shape shape2){
+        assert(shapeV_.size() == shape2.shapeV_.size());
+        int resultX1 = 0;
+        int resultY1 = 0;
+        int resultX2 = 0;
+        int resultY2 = 0;
+        int result = 0;
+        for (size_t i = 0; i < shapeV_.size(); i++)
+        {
+            resultX1 = shapeV_[i].x_ + pos_.x;
+            resultY1 = shapeV_[i].y_ + pos_.y;
+            for (size_t j = 0; j < shape2.shapeV_.size(); j++)
+            {
+                resultX2 = shape2.shapeV_[j].x_ + shape2.pos_.x;
+                resultY2 = shape2.shapeV_[j].y_ + shape2.pos_.y;
+
+                if(resultX1 == resultX2 && resultY1 == resultY2)
+                {
+                    result++;
+                }
+            }
+            
+            // if(result > 2)
+            //     return result;
+        }
+        return result;
+    }
 };
 
 /**
@@ -93,6 +124,29 @@ struct Drawer
     }
 
     /**
+     * Adds a Black Square on given Coordinates x, y
+     */
+    void addSqr(const int x, const int y, const int level)
+    {
+        ImVec2 pos(x * grid_step_, y * grid_step_);
+        switch (level)
+        {
+        case 1:
+            drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(255, 0, 0, 255));
+            break;
+        case 2:
+            drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(0, 255, 0, 255));
+            break;
+        case 3:
+            drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(0, 0, 255, 255));
+            break;
+        default:
+            drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(0, 0, 0, 255));
+            break;
+        }
+    }
+
+    /**
      * Adds a Black Square on given Cooridinates from Pair
      */
     void addSqr(const Pair &pair)
@@ -105,9 +159,20 @@ struct Drawer
     */
     void addShape(const Shape &s, const ImVec2 &pos)
     {
-        for (auto pixel : s.shapeV_)
+        switch (s.level_)
         {
-            addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y);
+        case 0:
+            for (auto pixel : s.shapeV_)
+            {
+                addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y);
+            }
+            break;
+        default:
+            for (auto pixel : s.shapeV_)
+            {
+                addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y, s.level_);
+            }
+            break;
         }
     }
 
@@ -182,16 +247,56 @@ static void myProg()
         Drawer dr = Drawer(GRID_STEP, canvas_p0, draw_list);
 
         //Create a Square-Shape in coordinates 0, 0
-        Shape sq = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, {1, 1}};
+        Shape sq = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, {1, 1}, 0};
 
         //Create Rectangular Shape in coordinates 0, 0
-        Shape rectangle = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {0, 0}};
+        Shape rectangle = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {0, 0}, 0};
+        Shape rectangle1 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {4, 4}, 0};
+        Shape rectangle2 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {6, 4}, 0};
+        Shape rectangle3 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {3, 2}, 0};
+        //TODO
+        //Push this outside run loop??
+        static std::map<int, std::vector<Shape>> level;
+        static std::vector<Shape> shapes;
+        static std::vector<Shape> shapes1;
+        shapes.push_back(rectangle);
+        shapes.push_back(rectangle1);
+        shapes1.push_back(rectangle2);
+        shapes1.push_back(rectangle3);
+        level[0] = shapes;
+        level[1] = shapes1;
+        // std::cout << "equal pix: " << rectangle1.equalPixels(rectangle2) << std::endl;
 
-        //Draw Square-Shape
-        // dr.addShape(sq);
+        /**
+         * Comparing the 2 Shape vectors to see how many pixels are equal on each vector
+         */ 
+        int result = 0; 
+        for (size_t i = 0; i < shapes.size(); i++)
+        {
+            dr.addShape(shapes[i]);
+            for (size_t j = 0; j < shapes1.size(); j++)
+            {
+                result = shapes[i].equalPixels(shapes1[j]);
+                if (result >= 2)
+                {
+                    //TODO
+                    //What way would be the correct to implement this?
+                    // std::cout<< "need new level"<<std::endl;
+                    shapes1[j].level_ = shapes[i].level_ + 1;
+                    std::cout<< shapes1[j].level_ << std::endl;
+                }
+                dr.addShape(shapes1[j]);
+            }
+        }
+
 
         //Draw Rectangular Shape
-        dr.addShape(rectangle, {1, 1});
+        // dr.addShape(rectangle);
+        // dr.addShape(rectangle1);
+        // dr.addShape(rectangle2);
+        std::cout << "fdsafdsa" <<rectangle3.level_ << std::endl;
+        // dr.addShape(rectangle3);
+        
 
         // drawer::addShape(draw_list, sq);
 
@@ -259,13 +364,20 @@ static void myProg()
         for (int n = 0; n < points.Size; n += 2)
             draw_list->AddLine(ImVec2(origin.x + points[n].x, origin.y + points[n].y), ImVec2(origin.x + points[n + 1].x, origin.y + points[n + 1].y), IM_COL32(255, 255, 0, 255), 2.0f);
         draw_list->PopClipRect();
+
+        /**
+         * Pop all the shapes so Size remains true
+         */ 
+        for(auto shape : shapes)
+        {
+            shapes.pop_back();
+        }
+        for(auto shape : shapes1)
+        {
+            shapes1.pop_back();
+        }
     }
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
-}
-
-static bool searcher()
-{
-    // TODO
 }
