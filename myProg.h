@@ -253,41 +253,82 @@ static void myProg()
         Shape rectangle = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {0, 0}, 0};
         Shape rectangle1 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {4, 4}, 0};
         Shape rectangle2 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {6, 4}, 0};
-        Shape rectangle3 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {3, 2}, 0};
+        Shape rectangle3 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 1}, 0};
+        //TODO shape4 not working 
+        Shape rectangle4 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 3}, 0};
+
         //TODO
         //Push this outside run loop??
-        static std::map<int, std::vector<Shape>> level;
         static std::vector<Shape> shapes;
         static std::vector<Shape> shapes1;
         shapes.push_back(rectangle);
         shapes.push_back(rectangle1);
-        shapes1.push_back(rectangle2);
-        shapes1.push_back(rectangle3);
-        level[0] = shapes;
-        level[1] = shapes1;
+        // shapes1.push_back(rectangle2);
+        // shapes1.push_back(rectangle3);
+        shapes.push_back(rectangle2);
+        shapes.push_back(rectangle3);
+        shapes.push_back(rectangle4);
         // std::cout << "equal pix: " << rectangle1.equalPixels(rectangle2) << std::endl;
 
         /**
          * Comparing the 2 Shape vectors to see how many pixels are equal on each vector
          */ 
-        int result = 0; 
-        for (size_t i = 0; i < shapes.size(); i++)
+        int result = 0;
+        std::cout << shapes.size() << std::endl;
+        for (size_t i = 0; i < shapes.size() - 1; i++)
         {
             dr.addShape(shapes[i]);
-            for (size_t j = 0; j < shapes1.size(); j++)
+            std::cout << "shapes[" << i << "] level: " << shapes[i].level_ << std::endl;
+            result = shapes[i].equalPixels(shapes[i + 1]);
+            if (result > 1)
             {
-                result = shapes[i].equalPixels(shapes1[j]);
-                if (result >= 2)
+                std::cout << "shape " << i << " and " << i+1 << std::endl;
+                if (shapes[i].level_ == shapes[i + 1].level_)
                 {
-                    //TODO
-                    //What way would be the correct to implement this?
-                    // std::cout<< "need new level"<<std::endl;
-                    shapes1[j].level_ = shapes[i].level_ + 1;
-                    std::cout<< shapes1[j].level_ << std::endl;
+                    shapes[i].level_++;
+                    std::cout << "level " << shapes[i+1].level_ << std::endl;
+                    std::cout << "shapes[" << i << "] level: " << shapes[i].level_ <<  " AFTER" << std::endl;
                 }
-                dr.addShape(shapes1[j]);
+                else if (shapes[i].level_ > shapes[i + 1].level_)
+                {
+                    shapes[i].level_ = shapes[i].level_ + 1;
+                }
+                
             }
+            dr.addShape(shapes[i]);
         }
+        result = shapes[shapes.size() - 1].equalPixels(shapes[shapes.size() - 2]);
+        if (result > 1)
+        {
+                if (shapes[shapes.size() - 1].level_ == shapes[shapes.size() - 2].level_)
+                {
+                    shapes[shapes.size() - 1].level_++;
+                }
+                else if (shapes[shapes.size() - 2].level_ > shapes[shapes.size() - 1].level_)
+                {
+                    shapes[shapes.size() - 1].level_ = shapes[shapes.size() - 2].level_ + 1;
+                }
+                
+            dr.addShape(shapes[shapes.size() - 1]);
+        }
+        
+        // for (size_t i = 0; i < shapes.size(); i++)
+        // {
+        //     dr.addShape(shapes[i]);
+        //     for (size_t j = 0; j < shapes1.size(); j++)
+        //     {
+        //         result = shapes[i].equalPixels(shapes1[j]);
+        //         if (result >= 2)
+        //         {
+        //             //TODO
+        //             //What way would be the correct to implement this?
+        //             // std::cout<< "need new level"<<std::endl;
+        //             shapes1[j].level_ = shapes[i].level_ + 1;
+        //             std::cout<< shapes1[j].level_ << std::endl;
+        //         }
+        //         dr.addShape(shapes1[j]);
+        //     }
+        // }
 
 
         //Draw Rectangular Shape
