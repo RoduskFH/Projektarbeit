@@ -70,7 +70,8 @@ struct Shape
     ImVec2 pos_;
     int level_;
 
-    inline int equalPixels(Shape shape2){
+    inline int equalPixels(Shape shape2)
+    {
         assert(shapeV_.size() == shape2.shapeV_.size());
         int resultX1 = 0;
         int resultY1 = 0;
@@ -86,12 +87,12 @@ struct Shape
                 resultX2 = shape2.shapeV_[j].x_ + shape2.pos_.x;
                 resultY2 = shape2.shapeV_[j].y_ + shape2.pos_.y;
 
-                if(resultX1 == resultX2 && resultY1 == resultY2)
+                if (resultX1 == resultX2 && resultY1 == resultY2)
                 {
                     result++;
                 }
             }
-            
+
             // if(result > 2)
             //     return result;
         }
@@ -178,7 +179,7 @@ struct Drawer
 
     /**
      * Adds a shape on Coordinates given by the Shape
-     */ 
+     */
     void addShape(const Shape &s)
     {
         addShape(s, s.pos_);
@@ -254,12 +255,12 @@ static void myProg()
         Shape rectangle1 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {4, 4}, 0};
         Shape rectangle2 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {6, 4}, 0};
         Shape rectangle3 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 1}, 0};
-        //TODO shape4 not working 
+        //TODO shape4 not working
         Shape rectangle4 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 3}, 0};
 
         //TODO
         //Push this outside run loop??
-        static std::vector<Shape*> shapes;
+        static std::vector<Shape *> shapes;
         // static std::vector<Shape*> shapes1;
         shapes.push_back(&rectangle);
         shapes.push_back(&rectangle1);
@@ -272,7 +273,7 @@ static void myProg()
 
         /**
          * Comparing the 2 Shape vectors to see how many pixels are equal on each vector
-         */ 
+         */
         int result = 0;
         // for (size_t i = 0; i < shapes.size() - 1; i++)
         // {
@@ -292,7 +293,7 @@ static void myProg()
         //         {
         //             shapes[i].level_ = shapes[i].level_ + 1;
         //         }
-                
+
         //     }
         //     dr.addShape(shapes[i]);
         // }
@@ -307,10 +308,10 @@ static void myProg()
         //         {
         //             shapes[shapes.size() - 1].level_ = shapes[shapes.size() - 2].level_ + 1;
         //         }
-                
+
         //     dr.addShape(shapes[shapes.size() - 1]);
         // }
-        
+
         // for (size_t i = 0; i < shapes.size(); i++)
         // {
         //     dr.addShape(*shapes[i]);
@@ -328,23 +329,22 @@ static void myProg()
         //         dr.addShape(*shapes1[j]);
         //     }
         // }
-        
 
         /**
          * Draw Shapes except the last one
-         */ 
+         */
         for (size_t i = 0; i < shapes.size() - 1; i++)
         {
-            
+
             result = (*shapes[i]).equalPixels(*shapes[i + 1]);
             if (result >= 2)
             {
-                 std::cout << "shape " << i << " and " << i+1 << std::endl;
+                std::cout << "shape " << i << " and " << i + 1 << std::endl;
                 if ((*shapes[i]).level_ == (*shapes[i + 1]).level_)
                 {
                     (*shapes[i]).level_++;
-                    std::cout << "level " << (*shapes[i+1]).level_ << std::endl;
-                    std::cout << "shapes[" << i << "] level: " << (*shapes[i]).level_ <<  " AFTER" << std::endl;
+                    std::cout << "level " << (*shapes[i + 1]).level_ << std::endl;
+                    std::cout << "shapes[" << i << "] level: " << (*shapes[i]).level_ << " AFTER" << std::endl;
                 }
                 else if ((*shapes[i]).level_ > (*shapes[i + 1]).level_)
                 {
@@ -355,7 +355,7 @@ static void myProg()
         }
         /**
          * Draw last Shape
-         */ 
+         */
         result = (*shapes[shapes.size() - 1]).equalPixels((*shapes[shapes.size() - 2]));
         if (result > 1)
         {
@@ -367,11 +367,8 @@ static void myProg()
             {
                 (*shapes[shapes.size() - 1]).level_ = (*shapes[shapes.size() - 2]).level_ + 1;
             }
-            dr.addShape(*shapes[shapes.size() - 1]);
         }
-
-        
-
+        dr.addShape(*shapes[shapes.size() - 1]);
 
         //Draw Rectangular Shape
         // dr.addShape(rectangle);
@@ -379,7 +376,6 @@ static void myProg()
         // dr.addShape(rectangle2);
         std::cout << "fdsafdsa " << rectangle3.level_ << std::endl;
         // dr.addShape(rectangle3);
-        
 
         // drawer::addShape(draw_list, sq);
 
@@ -450,8 +446,8 @@ static void myProg()
 
         /**
          * Pop all the shapes so Size remains true
-         */ 
-        for(auto shape : shapes)
+         */
+        for (auto shape : shapes)
         {
             shapes.pop_back();
         }
