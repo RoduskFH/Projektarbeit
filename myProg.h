@@ -259,7 +259,7 @@ static void myProg()
         Shape rectangle2 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {6, 4}, 0};
         Shape rectangle3 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 1}, 0};
         //TODO shape4 not working
-        Shape rectangle4 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {2, 3}, 0};
+        Shape rectangle4 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 3}, 0};
 
         //TODO
         //Push this outside run loop??
@@ -334,7 +334,7 @@ static void myProg()
         // }
 
         /**
-         * Draw Shapes except the last one
+         * Draw Shapes
          */
         for (size_t i = 0; i < shapes.size(); i++)
         {
@@ -361,7 +361,7 @@ static void myProg()
                 }
             }
             dr.addShape(*shapes[i]);
-            std::cout << "shapes[" << i << "] level: " << (*shapes[i]).level_ << std::endl;      
+            std::cout << "shapes[" << i << "] level: " << (*shapes[i]).level_ << std::endl;
         }
         /**
          * Draw last Shape
