@@ -61,18 +61,26 @@ struct Pair
     int y_;
 };
 
+typedef std::vector<Pair> Pixels;
+
 /**
  *  Define the Shape in a Pair-Vector and also stores the position of given Shape
  */
 struct Shape
 {
-    std::vector<Pair> shapeV_;
+    unsigned int width_;
+    unsigned int height_;
     ImVec2 pos_;
-    int level_;
+    unsigned int level_;
 
+    Shape(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int l = 0) : width_(w), height_(h), pos_(x, y), level_(l)
+    {
+    }
     inline int equalPixels(Shape shape2)
     {
-        assert(shapeV_.size() == shape2.shapeV_.size());
+        std::vector<Pair> shapeV_ = getPixels();
+        std::vector<Pair> shapeV_2 = shape2.getPixels();
+        assert(shapeV_.size() == shapeV_2.size());
         int resultX1 = 0;
         int resultY1 = 0;
         int resultX2 = 0;
@@ -82,21 +90,40 @@ struct Shape
         {
             resultX1 = shapeV_[i].x_ + pos_.x;
             resultY1 = shapeV_[i].y_ + pos_.y;
-            for (size_t j = 0; j < shape2.shapeV_.size(); j++)
+            for (size_t j = 0; j < shapeV_2.size(); j++)
             {
-                resultX2 = shape2.shapeV_[j].x_ + shape2.pos_.x;
-                resultY2 = shape2.shapeV_[j].y_ + shape2.pos_.y;
+                resultX2 = shapeV_2[j].x_ + shape2.pos_.x;
+                resultY2 = shapeV_2[j].y_ + shape2.pos_.y;
 
                 if (resultX1 == resultX2 && resultY1 == resultY2)
                 {
                     result++;
                 }
             }
-
-            // if(result > 2)
-            //     return result;
         }
         return result;
+    }
+
+    inline Pixels getPixels() const
+    {
+        Pixels p;
+        p.reserve(width_ * height_);
+        for (size_t w = 0; w < width_; w++)
+        {
+            for (size_t h = 0; h < height_; h++)
+            {
+                Pair pix = {w, h};
+                p.push_back(pix);
+            }
+        }
+        return p;
+    }
+
+    inline void rotate()
+    {
+        int dummy = width_;
+        width_ = height_;
+        height_ = dummy;
     }
 };
 
@@ -109,9 +136,10 @@ struct Drawer
 {
     float grid_step_;
     ImVec2 canvas_p0_;
+    ImVec2 scrolling_;
     ImDrawList *drw;
 
-    Drawer(float step, const ImVec2 p0, ImDrawList *drw) : grid_step_(step), canvas_p0_(p0), drw(drw)
+    Drawer(float step, const ImVec2 p0, const ImVec2 scrolling, ImDrawList *drw) : grid_step_(step), canvas_p0_(p0), scrolling_(scrolling), drw(drw)
     {
     }
 
@@ -120,7 +148,7 @@ struct Drawer
      */
     void addSqr(const int x, const int y)
     {
-        ImVec2 pos(x * grid_step_, y * grid_step_);
+        ImVec2 pos(x * grid_step_ + scrolling_.x, y * grid_step_ + scrolling_.y);
         drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(0, 0, 0, 255));
     }
 
@@ -129,7 +157,7 @@ struct Drawer
      */
     void addSqr(const int x, const int y, const int level)
     {
-        ImVec2 pos(x * grid_step_, y * grid_step_);
+        ImVec2 pos(x * grid_step_ + scrolling_.x, y * grid_step_ + scrolling_.y);
         switch (level)
         {
         case 1:
@@ -166,13 +194,13 @@ struct Drawer
         switch (s.level_)
         {
         case 0:
-            for (auto pixel : s.shapeV_)
+            for (auto pixel : s.getPixels())
             {
                 addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y);
             }
             break;
         default:
-            for (auto pixel : s.shapeV_)
+            for (auto pixel : s.getPixels())
             {
                 addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y, s.level_);
             }
@@ -189,16 +217,75 @@ struct Drawer
     }
 };
 
+static unsigned int maxLevel(std::vector<Shape> &shapes)
+{
+    unsigned int maxLevel = 0;
+    for (auto s : shapes)
+    {
+        if (s.level_ > maxLevel)
+        {
+            maxLevel = s.level_;
+        }
+    }
+    return maxLevel;
+}
+
+static bool stackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
+{
+    int result = 0;
+    bool canStack = false;
+
+    if (level == 0)
+    {
+        canStack = true;
+        std::cout << "HERP " << canStack << std::endl;
+    }
+    else
+    {
+        for (auto &sha : shapes)
+        {
+            if (sha.level_ == level - 1)
+            {
+                result += sha.equalPixels(s);
+                if (result >= 2)
+                {
+                    canStack = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!canStack)
+    {
+        return false;
+    }
+
+    /**
+     * This checks if there are collisions on the same level
+     */
+    for (auto &sha : shapes)
+    {
+        if (sha.level_ == level && sha.equalPixels(s))
+        {
+            return false;
+        }
+    }
+    s.level_ = level;
+    shapes.push_back(s);
+    return true;
+}
+
 static void myProg()
 {
-    static float f = 0.0f;
+    static int currentLevel = 0;
     static int counter = 0;
 
     ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
 
     ImGui::Text("This is some useful text."); // Display some text (you can use a format strings too)
 
-    ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+    ImGui::SliderInt("Level", &currentLevel, 0, 10); // Edit 1 float using a slider from 0.0f to 1.0f
 
     if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
         counter++;
@@ -248,149 +335,36 @@ static void myProg()
         ImVec2 p0 = ImVec2(GRID_STEP + canvas_p0.x, GRID_STEP + canvas_p0.y);
         ImVec2 p1 = ImVec2(2 * GRID_STEP + canvas_p0.x, 2 * GRID_STEP + canvas_p0.y);
 
-        Drawer dr = Drawer(GRID_STEP, canvas_p0, draw_list);
-
-        //Create a Square-Shape in coordinates 0, 0
-        Shape sq = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, {1, 1}, 0};
+        Drawer dr = Drawer(GRID_STEP, canvas_p0, scrolling, draw_list);
 
         //Create Rectangular Shape in coordinates 0, 0
-        Shape rectangle = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {0, 0}, 0};
-        Shape rectangle1 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {4, 4}, 0};
-        Shape rectangle2 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {6, 4}, 0};
-        Shape rectangle3 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 1}, 0};
-        //TODO shape4 not working
-        Shape rectangle4 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 3}, 0};
+        // Shape rectangle = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {0, 0}, 0};
+        Shape rectangle(0, 0, 2, 3);
+        rectangle.rotate();
+        Shape rectangle1(1, 2, 2, 3);
+        // Shape rectangle1 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {4, 4}, 0};
+        // Shape rectangle2 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {6, 4}, 0};
+        // Shape rectangle3 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 1}, 0};
+        // Shape rectangle4 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {2, 3}, 0};
 
-        //TODO
-        //Push this outside run loop??
-        static std::vector<Shape *> shapes;
-        // static std::vector<Shape*> shapes1;
-        shapes.push_back(&rectangle);
-        shapes.push_back(&rectangle1);
-        // shapes1.push_back(&rectangle2);
-        // shapes1.push_back(&rectangle3);
-        shapes.push_back(&rectangle2);
-        shapes.push_back(&rectangle3);
-        shapes.push_back(&rectangle4);
-        // std::cout << "equal pix: " << rectangle1.equalPixels(rectangle2) << std::endl;
+        //TODO Push this outside run loop??
+        std::vector<Shape> shapes;
 
+        std::cout << stackShape(shapes, rectangle, 0) << std::endl;
+        stackShape(shapes, rectangle1, 0);
+        stackShape(shapes, rectangle1, 1);
         /**
          * Comparing the 2 Shape vectors to see how many pixels are equal on each vector
          */
-        int result = 0;
-        // for (size_t i = 0; i < shapes.size() - 1; i++)
-        // {
-        //     dr.addShape(shapes[i]);
-        //     std::cout << "shapes[" << i << "] level: " << shapes[i].level_ << std::endl;
-        //     result = shapes[i].equalPixels(shapes[i + 1]);
-        //     if (result > 1)
-        //     {
-        //         std::cout << "shape " << i << " and " << i+1 << std::endl;
-        //         if (shapes[i].level_ == shapes[i + 1].level_)
-        //         {
-        //             shapes[i].level_++;
-        //             std::cout << "level " << shapes[i+1].level_ << std::endl;
-        //             std::cout << "shapes[" << i << "] level: " << shapes[i].level_ <<  " AFTER" << std::endl;
-        //         }
-        //         else if (shapes[i].level_ > shapes[i + 1].level_)
-        //         {
-        //             shapes[i].level_ = shapes[i].level_ + 1;
-        //         }
-
-        //     }
-        //     dr.addShape(shapes[i]);
-        // }
-        // result = shapes[shapes.size() - 1].equalPixels(shapes[shapes.size() - 2]);
-        // if (result > 1)
-        // {
-        //         if (shapes[shapes.size() - 1].level_ == shapes[shapes.size() - 2].level_)
-        //         {
-        //             shapes[shapes.size() - 1].level_++;
-        //         }
-        //         else if (shapes[shapes.size() - 2].level_ > shapes[shapes.size() - 1].level_)
-        //         {
-        //             shapes[shapes.size() - 1].level_ = shapes[shapes.size() - 2].level_ + 1;
-        //         }
-
-        //     dr.addShape(shapes[shapes.size() - 1]);
-        // }
-
-        // for (size_t i = 0; i < shapes.size(); i++)
-        // {
-        //     dr.addShape(*shapes[i]);
-        //     for (size_t j = 0; j < shapes1.size(); j++)
-        //     {
-        //         result = (*shapes[i]).equalPixels(*shapes1[j]);
-        //         if (result > 1)
-        //         {
-        //             //TODO
-        //             //What way would be the correct to implement this?
-        //             // std::cout<< "need new level"<<std::endl;
-        //             (*shapes1[j]).level_ = (*shapes[i]).level_ + 1;
-        //             std::cout<< (*shapes1[j]).level_ << std::endl;
-        //         }
-        //         dr.addShape(*shapes1[j]);
-        //     }
-        // }
-
-        /**
-         * Draw Shapes
-         */
-        for (size_t i = 0; i < shapes.size(); i++)
-        {
-            for (size_t j = 1; j < shapes.size(); j++)
-            {
-                //Dont compare Shape with itself
-                if (i >= j)
-                {
-                    continue;
-                }
-                result = (*shapes[i]).equalPixels(*shapes[j]);
-                std::cout << "Comparing rect" << i << " and rect" << j << std::endl;
-                if (result > 1)
-                {
-                    if ((*shapes[i]).level_ == (*shapes[j]).level_)
-                    {
-                        (*shapes[j]).level_++;
-                    }
-                    else if ((*shapes[i]).level_ > (*shapes[j]).level_)
-                    {
-                        //TODO not sure if i need this else if xd
-                        (*shapes[j]).level_ = (*shapes[i]).level_ + 1;
-                    }
-                }
-            }
-            dr.addShape(*shapes[i]);
-            std::cout << "shapes[" << i << "] level: " << (*shapes[i]).level_ << std::endl;
-        }
-        /**
-         * Draw last Shape
-         */
-        // result = (*shapes[shapes.size() - 1]).equalPixels((*shapes[shapes.size() - 2]));
-        // if (result > 1)
-        // {
-        //     if ((*shapes[shapes.size() - 1]).level_ == (*shapes[shapes.size() - 2]).level_)
-        //     {
-        //         (*shapes[shapes.size() - 1]).level_++;
-        //     }
-        //     else if ((*shapes[shapes.size() - 2]).level_ > (*shapes[shapes.size() - 1]).level_)
-        //     {
-        //         (*shapes[shapes.size() - 1]).level_ = (*shapes[shapes.size() - 2]).level_ + 1;
-        //     }
-        // }
-        // dr.addShape(*shapes[shapes.size() - 1]);
-
-        //Draw Rectangular Shape
         // dr.addShape(rectangle);
-        // dr.addShape(rectangle1);
-        // dr.addShape(rectangle2);
-        // std::cout << "fdsafdsa " << rectangle3.level_ << std::endl;
-        // dr.addShape(rectangle3);
-
-        // drawer::addShape(draw_list, sq);
-
-        // draw_list->AddRectFilled(p0 + p1, p1, IM_COL32(0, 0, 0, 255));
-
+        int result = 0;
+        for (auto &s : shapes)
+        {
+            if (currentLevel == s.level_ || s.level_ + 1 == currentLevel)
+            {
+                dr.addShape(s);
+            }
+        }
         // This will catch our interactions
         ImGui::InvisibleButton("canvas", canvas_sz, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
         const bool is_hovered = ImGui::IsItemHovered();                            // Hovered
@@ -457,13 +431,9 @@ static void myProg()
         /**
          * Pop all the shapes so Size remains true
          */
-        for (auto shape : shapes)
-        {
-            shapes.pop_back();
-        }
-        // for(auto shape : shapes1)
+        // for (auto shape : shapes)
         // {
-        //     shapes1.pop_back();
+        //     shapes.pop_back();
         // }
     }
 
