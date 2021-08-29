@@ -80,7 +80,7 @@ struct Shape
     {
         std::vector<Pair> shapeV_ = getPixels();
         std::vector<Pair> shapeV_2 = shape2.getPixels();
-        assert(shapeV_.size() == shapeV_2.size());
+        // assert(shapeV_.size() == shapeV_2.size());
         int resultX1 = 0;
         int resultY1 = 0;
         int resultX2 = 0;
@@ -230,7 +230,7 @@ static unsigned int maxLevel(std::vector<Shape> &shapes)
     return maxLevel;
 }
 
-static bool stackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
+static bool canStackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
 {
     int result = 0;
     bool canStack = false;
@@ -271,6 +271,15 @@ static bool stackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
             return false;
         }
     }
+    return true;
+}
+
+static bool stackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
+{
+    if (!canStackShape(shapes, s, level))
+    {
+        return false;
+    }
     s.level_ = level;
     shapes.push_back(s);
     return true;
@@ -279,18 +288,32 @@ static bool stackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
 static void myProg()
 {
     static int currentLevel = 0;
+    static int currX = 0;
+    static int currY = 0;
+    static int currH = 1;
+    static int currW = 1;
     static int counter = 0;
+    static std::vector<Shape> shapes;
 
-    ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
-
-    ImGui::Text("This is some useful text."); // Display some text (you can use a format strings too)
+    ImGui::Begin("HERPY! OWO"); // Create a window called "Hello, world!" and append into it.
 
     ImGui::SliderInt("Level", &currentLevel, 0, 10); // Edit 1 float using a slider from 0.0f to 1.0f
 
-    if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
-        counter++;
+    ImGui::SliderInt("X", &currX, 0, 10);
+
+    ImGui::SliderInt("Y", &currY, 0, 10);
+
+    ImGui::SliderInt("Height", &currH, 1, 10);
+
+    ImGui::SliderInt("Width", &currW, 1, 10);
+
+    Shape dummy(currX, currY, currW, currH, currentLevel);
+    if (ImGui::Button("Add Shape")) // Buttons return true when clicked (most widgets return true when edited/activated)
+    {
+        stackShape(shapes, Shape(currX, currY, currW, currH), currentLevel);
+    }
     ImGui::SameLine();
-    ImGui::Text("counter = %d", counter);
+    ImGui::Text("counter = %i", (int)shapes.size());
 
     {
         static ImVector<ImVec2> points;
@@ -340,7 +363,7 @@ static void myProg()
         //Create Rectangular Shape in coordinates 0, 0
         // Shape rectangle = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {0, 0}, 0};
         Shape rectangle(0, 0, 2, 3);
-        rectangle.rotate();
+        Shape rectangle2(currX, currY, currW, currH);
         Shape rectangle1(1, 2, 2, 3);
         // Shape rectangle1 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {4, 4}, 0};
         // Shape rectangle2 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {6, 4}, 0};
@@ -348,11 +371,11 @@ static void myProg()
         // Shape rectangle4 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {2, 3}, 0};
 
         //TODO Push this outside run loop??
-        std::vector<Shape> shapes;
 
-        std::cout << stackShape(shapes, rectangle, 0) << std::endl;
-        stackShape(shapes, rectangle1, 0);
-        stackShape(shapes, rectangle1, 1);
+        // std::cout << stackShape(shapes, rectangle, 0) << std::endl;
+        // stackShape(shapes, rectangle1, 0);
+        // stackShape(shapes, rectangle1, 1);
+        // stackShape(shapes, rectangle2, currentLevel);
         /**
          * Comparing the 2 Shape vectors to see how many pixels are equal on each vector
          */
@@ -365,6 +388,17 @@ static void myProg()
                 dr.addShape(s);
             }
         }
+        static unsigned int blink = 30;
+        if (canStackShape(shapes, dummy, currentLevel) && blink > 30)
+        {
+            dr.addShape(dummy);
+        }
+        blink--;
+        if (blink == 0)
+        {
+            blink = 60;
+        }
+
         // This will catch our interactions
         ImGui::InvisibleButton("canvas", canvas_sz, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
         const bool is_hovered = ImGui::IsItemHovered();                            // Hovered
