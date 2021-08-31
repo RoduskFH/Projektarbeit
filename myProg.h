@@ -72,8 +72,10 @@ struct Shape
     unsigned int height_;
     ImVec2 pos_;
     unsigned int level_;
+    bool canStack_;
+    bool isDummy_;
 
-    Shape(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int l = 0) : width_(w), height_(h), pos_(x, y), level_(l)
+    Shape(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int l = 0, bool canStack = false, bool isDummy = false) : width_(w), height_(h), pos_(x, y), level_(l), canStack_(canStack), isDummy_(isDummy)
     {
     }
     inline int equalPixels(Shape shape2)
@@ -191,20 +193,42 @@ struct Drawer
     */
     void addShape(const Shape &s, const ImVec2 &pos)
     {
-        switch (s.level_)
+        if (s.isDummy_ == false)
         {
-        case 0:
+
+            switch (s.level_)
+            {
+            case 0:
+                for (auto pixel : s.getPixels())
+                {
+                    addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y);
+                }
+                break;
+            default:
+                for (auto pixel : s.getPixels())
+                {
+                    addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y, s.level_);
+                    std::cout << "aM HERE" << std::endl;
+                }
+                break;
+            }
+        }
+        else
+        {
             for (auto pixel : s.getPixels())
             {
-                addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y);
-            }
-            break;
-        default:
-            for (auto pixel : s.getPixels())
-            {
-                addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y, s.level_);
-            }
-            break;
+                float x = pixel.x_ + pos.x;
+                float y = pixel.y_ + pos.y;
+                ImVec2 pos(x * grid_step_ + scrolling_.x, y * grid_step_ + scrolling_.y);
+                if (s.canStack_)
+                {
+                    drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(255, 100, 0, 255));
+                }
+                else
+                {
+                    drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(255, 0, 100, 255));
+                }
+                        }
         }
     }
 
@@ -323,7 +347,7 @@ static void myProg()
         static bool adding_line = false;
 
         ImGui::Checkbox("Enable grid", &opt_enable_grid);
-        ImGui::Checkbox("Enable context menu", &opt_enable_context_menu);
+        // ImGui::Checkbox("Enable context menu", &opt_enable_context_menu);
         ImGui::Text("Mouse Left: drag to add lines,\nMouse Right: drag to scroll, click for context menu.");
 
         // Typically you would use a BeginChild()/EndChild() pair to benefit from a clipping region + own scrolling.
@@ -372,6 +396,12 @@ static void myProg()
 
         //TODO Push this outside run loop??
 
+        //TODO blinking when place is accepted
+        //TODO Save/Load to file
+
+        //TODO verfolgung
+        //TODO documentation vom code
+
         // std::cout << stackShape(shapes, rectangle, 0) << std::endl;
         // stackShape(shapes, rectangle1, 0);
         // stackShape(shapes, rectangle1, 1);
@@ -389,8 +419,10 @@ static void myProg()
             }
         }
         static unsigned int blink = 30;
-        if (canStackShape(shapes, dummy, currentLevel) && blink > 30)
+        if (blink > 30)
         {
+            dummy.canStack_ = canStackShape(shapes, dummy, currentLevel); //this might add a delay when changing colors
+            dummy.isDummy_ = true;
             dr.addShape(dummy);
         }
         blink--;
