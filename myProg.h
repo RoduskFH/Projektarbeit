@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <fstream>
 
 static inline ImVec2 operator*(const ImVec2 &lhs, const float rhs) { return ImVec2(lhs.x * rhs, lhs.y * rhs); }
 static inline ImVec2 operator/(const ImVec2 &lhs, const float rhs) { return ImVec2(lhs.x / rhs, lhs.y / rhs); }
@@ -78,6 +79,9 @@ struct Shape
     Shape(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int l = 0, bool canStack = false, bool isDummy = false) : width_(w), height_(h), pos_(x, y), level_(l), canStack_(canStack), isDummy_(isDummy)
     {
     }
+    Shape()
+    {
+    }
     inline int equalPixels(Shape shape2)
     {
         std::vector<Pair> shapeV_ = getPixels();
@@ -110,9 +114,9 @@ struct Shape
     {
         Pixels p;
         p.reserve(width_ * height_);
-        for (size_t w = 0; w < width_; w++)
+        for (int w = 0; w < width_; w++)
         {
-            for (size_t h = 0; h < height_; h++)
+            for (int h = 0; h < height_; h++)
             {
                 Pair pix = {w, h};
                 p.push_back(pix);
@@ -208,7 +212,6 @@ struct Drawer
                 for (auto pixel : s.getPixels())
                 {
                     addSqr(pixel.x_ + pos.x, pixel.y_ + pos.y, s.level_);
-                    std::cout << "aM HERE" << std::endl;
                 }
                 break;
             }
@@ -228,7 +231,7 @@ struct Drawer
                 {
                     drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(255, 0, 100, 255));
                 }
-                        }
+            }
         }
     }
 
@@ -309,6 +312,40 @@ static bool stackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
     return true;
 }
 
+bool writeVectorBinary(std::ostream &os, const std::vector<Shape> &v)
+{
+    if (!os.good())
+    {
+        std::cout << ("Bad Stream") << std::endl;
+        return false;
+    }
+    unsigned int nbElements = v.size();
+    os.write((const char *)&nbElements, sizeof(unsigned int));
+    if (nbElements > 0)
+    {
+        os.write((const char *)&v[0], nbElements * sizeof(Shape));
+    }
+    return true;
+}
+
+bool readVectorBinary(std::istream &is, std::vector<Shape> &v)
+{
+    if (!is.good())
+    {
+        std::cout << ("Bad Stream") << std::endl;
+        return false;
+    }
+    unsigned int nbElements;
+    v.clear();
+    is.read((char *)&nbElements, sizeof(unsigned int));
+    v.resize(nbElements);
+    if (nbElements > 0)
+    {
+        is.read((char *)&v[0], nbElements * sizeof(Shape));
+    }
+    return true;
+}
+
 static void myProg()
 {
     static int currentLevel = 0;
@@ -332,12 +369,40 @@ static void myProg()
     ImGui::SliderInt("Width", &currW, 1, 10);
 
     Shape dummy(currX, currY, currW, currH, currentLevel);
+
     if (ImGui::Button("Add Shape")) // Buttons return true when clicked (most widgets return true when edited/activated)
     {
         stackShape(shapes, Shape(currX, currY, currW, currH), currentLevel);
     }
+
     ImGui::SameLine();
     ImGui::Text("counter = %i", (int)shapes.size());
+
+    const unsigned int fileNameSize = 100;
+    static char fileName[fileNameSize] = "Filename";
+    ImGui::InputText("Filename", fileName, fileNameSize);
+
+    if (ImGui::Button("Save"))
+    {
+        std::string fullSaveName = (std::string)fileName + ".voxy";
+        std::filebuf fb;
+        fb.open(fullSaveName, std::ios::out);
+        std::ostream os(&fb);
+        writeVectorBinary(os, shapes);
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Load"))
+    {
+        std::filebuf fb;
+        std::string loadName = (std::string)fileName + ".voxy";
+        if (fb.open(loadName, std::ios::in))
+        {
+            std::istream is(&fb);
+            readVectorBinary(is, shapes);
+        }
+        fb.close();
+    }
 
     {
         static ImVector<ImVec2> points;
@@ -396,9 +461,6 @@ static void myProg()
 
         //TODO Push this outside run loop??
 
-        //TODO blinking when place is accepted
-        //TODO Save/Load to file
-
         //TODO verfolgung
         //TODO documentation vom code
 
@@ -409,7 +471,6 @@ static void myProg()
         /**
          * Comparing the 2 Shape vectors to see how many pixels are equal on each vector
          */
-        // dr.addShape(rectangle);
         int result = 0;
         for (auto &s : shapes)
         {
