@@ -65,7 +65,7 @@ struct Pair
 typedef std::vector<Pair> Pixels;
 
 /**
- *  Define the Shape in a Pair-Vector and also stores the position of given Shape
+ *  Define the Shape giving its width and height
  */
 struct Shape
 {
@@ -74,19 +74,23 @@ struct Shape
     ImVec2 pos_;
     unsigned int level_;
     bool canStack_;
-    bool isDummy_;
+    bool isDummy_; //the blinking pixel
 
     Shape(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int l = 0, bool canStack = false, bool isDummy = false) : width_(w), height_(h), pos_(x, y), level_(l), canStack_(canStack), isDummy_(isDummy)
     {
     }
+
     Shape()
     {
     }
+
+    /**
+     * Compares 2 Shapes and returns the number of equal pixel position
+     */
     inline int equalPixels(Shape shape2)
     {
         std::vector<Pair> shapeV_ = getPixels();
         std::vector<Pair> shapeV_2 = shape2.getPixels();
-        // assert(shapeV_.size() == shapeV_2.size());
         int resultX1 = 0;
         int resultY1 = 0;
         int resultX2 = 0;
@@ -110,6 +114,9 @@ struct Shape
         return result;
     }
 
+    /**
+     * Returns the Pixels from a Shape
+     */
     inline Pixels getPixels() const
     {
         Pixels p;
@@ -159,7 +166,7 @@ struct Drawer
     }
 
     /**
-     * Adds a Black Square on given Coordinates x, y
+     * Adds a Square to the drawing list on given Coordinates x, y and level
      */
     void addSqr(const int x, const int y, const int level)
     {
@@ -197,7 +204,7 @@ struct Drawer
     */
     void addShape(const Shape &s, const ImVec2 &pos)
     {
-        if (s.isDummy_ == false)
+        if (s.isDummy_ == false) //Not the blinking Pixel/Shape
         {
 
             switch (s.level_)
@@ -244,20 +251,10 @@ struct Drawer
     }
 };
 
-static unsigned int maxLevel(std::vector<Shape> &shapes)
-{
-    unsigned int maxLevel = 0;
-    for (auto s : shapes)
-    {
-        if (s.level_ > maxLevel)
-        {
-            maxLevel = s.level_;
-        }
-    }
-    return maxLevel;
-}
-
-static bool canStackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
+/**
+ * Checks if the position of the blinking Pixel is accepted
+ */
+bool canStackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
 {
     int result = 0;
     bool canStack = false;
@@ -265,7 +262,6 @@ static bool canStackShape(std::vector<Shape> &shapes, Shape s, unsigned int leve
     if (level == 0)
     {
         canStack = true;
-        std::cout << "HERP " << canStack << std::endl;
     }
     else
     {
@@ -301,7 +297,7 @@ static bool canStackShape(std::vector<Shape> &shapes, Shape s, unsigned int leve
     return true;
 }
 
-static bool stackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
+bool stackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
 {
     if (!canStackShape(shapes, s, level))
     {
@@ -312,6 +308,28 @@ static bool stackShape(std::vector<Shape> &shapes, Shape s, unsigned int level)
     return true;
 }
 
+/**
+ * Create the Blinking for the dummy Shape
+ */
+void blinking(Shape blinker, std::vector<Shape> &shapes, const int currentLevel, Drawer &dr)
+{
+    static unsigned int blink = 30;
+    if (blink > 30)
+    {
+        blinker.canStack_ = canStackShape(shapes, blinker, currentLevel);
+        blinker.isDummy_ = true;
+        dr.addShape(blinker);
+    }
+    blink--;
+    if (blink == 0)
+    {
+        blink = 60;
+    }
+}
+
+/**
+ * Save File
+ */
 bool writeVectorBinary(std::ostream &os, const std::vector<Shape> &v)
 {
     if (!os.good())
@@ -328,6 +346,9 @@ bool writeVectorBinary(std::ostream &os, const std::vector<Shape> &v)
     return true;
 }
 
+/**
+ * Load File
+ */
 bool readVectorBinary(std::istream &is, std::vector<Shape> &v)
 {
     if (!is.good())
@@ -356,9 +377,9 @@ static void myProg()
     static int counter = 0;
     static std::vector<Shape> shapes;
 
-    ImGui::Begin("HERPY! OWO"); // Create a window called "Hello, world!" and append into it.
+    ImGui::Begin("HERPY! OWO");
 
-    ImGui::SliderInt("Level", &currentLevel, 0, 10); // Edit 1 float using a slider from 0.0f to 1.0f
+    ImGui::SliderInt("Level", &currentLevel, 0, 10);
 
     ImGui::SliderInt("X", &currX, 0, 10);
 
@@ -370,7 +391,7 @@ static void myProg()
 
     Shape dummy(currX, currY, currW, currH, currentLevel);
 
-    if (ImGui::Button("Add Shape")) // Buttons return true when clicked (most widgets return true when edited/activated)
+    if (ImGui::Button("Add Shape"))
     {
         stackShape(shapes, Shape(currX, currY, currW, currH), currentLevel);
     }
@@ -379,7 +400,7 @@ static void myProg()
     ImGui::Text("counter = %i", (int)shapes.size());
 
     const unsigned int fileNameSize = 100;
-    static char fileName[fileNameSize] = "Filename";
+    static char fileName[fileNameSize] = "";
     ImGui::InputText("Filename", fileName, fileNameSize);
 
     if (ImGui::Button("Save"))
@@ -441,37 +462,19 @@ static void myProg()
         draw_list->AddRectFilled(canvas_p0, canvas_p1, IM_COL32(50, 50, 50, 255));
         draw_list->AddRect(canvas_p0, canvas_p1, IM_COL32(255, 255, 255, 255));
 
-        //fdsafdsafdsa
         static const float GRID_STEP = 64.0f;
 
         ImVec2 p0 = ImVec2(GRID_STEP + canvas_p0.x, GRID_STEP + canvas_p0.y);
         ImVec2 p1 = ImVec2(2 * GRID_STEP + canvas_p0.x, 2 * GRID_STEP + canvas_p0.y);
-
         Drawer dr = Drawer(GRID_STEP, canvas_p0, scrolling, draw_list);
 
-        //Create Rectangular Shape in coordinates 0, 0
-        // Shape rectangle = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {0, 0}, 0};
-        Shape rectangle(0, 0, 2, 3);
-        Shape rectangle2(currX, currY, currW, currH);
-        Shape rectangle1(1, 2, 2, 3);
-        // Shape rectangle1 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {4, 4}, 0};
-        // Shape rectangle2 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {6, 4}, 0};
-        // Shape rectangle3 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {1, 1}, 0};
-        // Shape rectangle4 = {{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}}, {2, 3}, 0};
-
-        //TODO Push this outside run loop??
+        //TODO Push code outside run loop??
 
         //TODO verfolgung
-        //TODO documentation vom code
 
-        // std::cout << stackShape(shapes, rectangle, 0) << std::endl;
-        // stackShape(shapes, rectangle1, 0);
-        // stackShape(shapes, rectangle1, 1);
-        // stackShape(shapes, rectangle2, currentLevel);
         /**
-         * Comparing the 2 Shape vectors to see how many pixels are equal on each vector
+         * Draw Shapes on current level and one below
          */
-        int result = 0;
         for (auto &s : shapes)
         {
             if (currentLevel == s.level_ || s.level_ + 1 == currentLevel)
@@ -479,18 +482,8 @@ static void myProg()
                 dr.addShape(s);
             }
         }
-        static unsigned int blink = 30;
-        if (blink > 30)
-        {
-            dummy.canStack_ = canStackShape(shapes, dummy, currentLevel); //this might add a delay when changing colors
-            dummy.isDummy_ = true;
-            dr.addShape(dummy);
-        }
-        blink--;
-        if (blink == 0)
-        {
-            blink = 60;
-        }
+
+        blinking(dummy, shapes, currentLevel, dr);
 
         // This will catch our interactions
         ImGui::InvisibleButton("canvas", canvas_sz, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
@@ -554,14 +547,6 @@ static void myProg()
         for (int n = 0; n < points.Size; n += 2)
             draw_list->AddLine(ImVec2(origin.x + points[n].x, origin.y + points[n].y), ImVec2(origin.x + points[n + 1].x, origin.y + points[n + 1].y), IM_COL32(255, 255, 0, 255), 2.0f);
         draw_list->PopClipRect();
-
-        /**
-         * Pop all the shapes so Size remains true
-         */
-        // for (auto shape : shapes)
-        // {
-        //     shapes.pop_back();
-        // }
     }
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
