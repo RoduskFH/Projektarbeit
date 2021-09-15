@@ -6,7 +6,8 @@
 #include <map>
 #include <iostream>
 #include <fstream>
-
+//TODO installations readme
+//TODO zip file
 static inline ImVec2 operator*(const ImVec2 &lhs, const float rhs) { return ImVec2(lhs.x * rhs, lhs.y * rhs); }
 static inline ImVec2 operator/(const ImVec2 &lhs, const float rhs) { return ImVec2(lhs.x / rhs, lhs.y / rhs); }
 static inline ImVec2 operator+(const ImVec2 &lhs, const ImVec2 &rhs) { return ImVec2(lhs.x + rhs.x, lhs.y + rhs.y); }
@@ -186,6 +187,7 @@ struct Drawer
             drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(0, 0, 255, 255));
             break;
         default:
+            //black
             drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(0, 0, 0, 255));
             break;
         }
@@ -232,10 +234,12 @@ struct Drawer
                 ImVec2 pos(x * grid_step_ + scrolling_.x, y * grid_step_ + scrolling_.y);
                 if (s.canStack_)
                 {
+                    //orange
                     drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(255, 100, 0, 255));
                 }
                 else
                 {
+                    //pink
                     drw->AddRectFilled(canvas_p0_ + pos, canvas_p0_ + pos + ImVec2(grid_step_, grid_step_), IM_COL32(255, 0, 100, 255));
                 }
             }
