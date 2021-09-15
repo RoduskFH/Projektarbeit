@@ -395,6 +395,15 @@ static void myProg()
 
     Shape dummy(currX, currY, currW, currH, currentLevel);
 
+    if (ImGui::Button("Rotate Shape"))
+    {
+        // dummy.rotate();
+        int dummi = currH;
+        currH = currW;
+        currW = dummi;
+    }
+
+    ImGui::SameLine();
     if (ImGui::Button("Add Shape"))
     {
         stackShape(shapes, Shape(currX, currY, currW, currH), currentLevel);
